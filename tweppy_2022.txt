@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+import tweepy
+import csv
+import datetime
+
+class getTweets:
+    def __init__(self, consumer_key, consumer_secret, access_token, access_token_secret):
+        self.api = None
+
+        # credentials
+        self.consumer_key="_"
+        self.consumer_secret="_"
+        self.access_token="_"
+        self.access_token_secret="_"
+
+    def setAuth(self):
+        
+            self.auth = tweepy.OAuthHandler(
+                self.consumer_key, self.consumer_secret)
+            self.auth.set_access_token(
+                self.access_token, self.access_token_secret)
+            self.api = tweepy.API(
+                self.auth, wait_on_rate_limit=True)
+            if self.api.verify_credentials():
+                print('Authentication OK')
+            else:
+                print('Error occurred during authentication!')
+    def writeToFile(self, filename='tw.csv', query='#dataviz', count=100, lang='tr', since=None, until=None, items=1000):
+        self.setAuth()
+        currentTime = datetime.datetime.today().strftime('%Y-%m-%d')
+        previousTime = (datetime.datetime.today() -
+                        datetime.timedelta(days=7)).strftime('%Y-%m-%d')
+        try:
+            print('Initializing...')
+            ids = set()
+            csvFile = open(filename, 'a')
+            csvWriter = csv.writer(csvFile)
+            for tweet in tweepy.Cursor(self.api.search_tweets,
+                                       q=query,
+                                       count=count,
+                                       lang=lang,
+                                       until=since if since else currentTime).items(items):
+                # if (not tweet.retweeted) and ('RT @' not in tweet.text):
+                ids.add(tweet.id)
+                csvWriter.writerow([tweet.created_at,
+                                    tweet.text,  # tweet.text.encode('utf-8')
+                                    tweet.favorite_count,
+                                    tweet.retweet_count,
+                                    tweet.id,
+                                    tweet.user.screen_name])
+                print('{}. {} (creaed at: {})'.format(
+                    len(ids), tweet.text, tweet.created_at))
+        except Exception as err:
+            print('Error: {}'.format(err))
+        finally:
+            print('Completed!')
+            csvFile.close()
+tw = getTweets(
+        consumer_key="_",
+        consumer_secret="_",
+        access_token="_",
+        access_token_secret="_"
+        )
+tw.writeToFile(filename='twitter.csv',
+               query='#Tokyo2020 -filter:retweets', count=100, lang='tr', items=100)
